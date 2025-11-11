@@ -85,6 +85,50 @@ AUDIO_PROMPT_PATH = "YOUR_FILE.wav"
 wav = model.generate(text, audio_prompt_path=AUDIO_PROMPT_PATH)
 ta.save("test-2.wav", wav, model.sr)
 ```
+
+# Streaming TTS (Real-time Generation)
+
+For real-time, incremental audio generation, use the streaming API:
+
+```python
+from chatterbox.mtl_tts import ChatterboxMultilingualTTS
+
+# Initialize model
+multilingual_model = ChatterboxMultilingualTTS.from_pretrained(device="cuda")
+
+# Stream audio chunks as they are generated
+all_chunks = []
+for audio_chunk, metrics in multilingual_model.generate_stream(
+    text="Hola, ¿cómo estás? Espero que tengas un gran día.",
+    language_id="es",
+    audio_prompt_path="reference.wav",  # Optional
+    chunk_size=25,                       # Tokens per chunk
+    context_window=50,                   # For smooth transitions
+    print_metrics=True                   # Show RTF and latency
+):
+    # Process each chunk in real-time
+    # e.g., play audio, stream to network, etc.
+    all_chunks.append(audio_chunk)
+
+# Combine all chunks for final audio
+full_audio = torch.cat(all_chunks, dim=-1)
+ta.save("output_streaming.wav", full_audio, multilingual_model.sr)
+
+# Access performance metrics
+print(f"First chunk latency: {metrics.latency_to_first_chunk:.3f}s")
+print(f"RTF: {metrics.rtf:.3f}")
+```
+
+The streaming API supports all 23 languages and provides:
+- **Low latency**: First chunk typically within 0.5-2 seconds
+- **Real-time generation**: RTF < 1.0 on GPU
+- **Smooth audio**: Context window overlap and fade-in smoothing
+- **Performance metrics**: Track latency, RTF, duration, and chunk count
+
+See `example_multilingual_streaming.py` for more streaming examples, and `STREAMING_IMPLEMENTATION.md` for technical details.
+
+# Examples
+
 See `example_tts.py` and `example_vc.py` for more examples.
 
 # Acknowledgements
